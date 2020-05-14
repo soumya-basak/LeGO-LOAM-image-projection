@@ -211,30 +211,42 @@ public:
     void projectPointCloud(){
         // range image projection
         float verticalAngle, horizonAngle, range;
+        //auto verticalAngle, horizonAngle, range;
         size_t rowIdn, columnIdn, index, cloudSize; 
+        //auto rowIdn, columnIdn, index, cloudSize;
         PointType thisPoint;
 
         cloudSize = laserCloudIn->points.size();
 
         for (size_t i = 0; i < cloudSize; ++i){
+            //for (auto i : cloudSize){
 
             thisPoint.x = laserCloudIn->points[i].x;
             thisPoint.y = laserCloudIn->points[i].y;
             thisPoint.z = laserCloudIn->points[i].z;
+
+            float range = sqrt(thisPoint.x * thisPoint.x + thisPoint.y * thisPoint.y + thisPoint.z * thisPoint.z);
+
             // find the row and column index in the iamge for this point
             if (useCloudRing == true){
                 rowIdn = laserCloudInRing->points[i].ring;
             }
             else{
-                verticalAngle = atan2(thisPoint.z, sqrt(thisPoint.x * thisPoint.x + thisPoint.y * thisPoint.y)) * 180 / M_PI;
+            //    verticalAngle = atan2(thisPoint.z, sqrt(thisPoint.x * thisPoint.x + thisPoint.y * thisPoint.y)) * 180 / M_PI;
+                verticalAngle = std::asin(thisPoint.z / range);
+
                 rowIdn = (verticalAngle + ang_bottom) / ang_res_y;
             }
             if (rowIdn < 0 || rowIdn >= N_SCAN)
                 continue;
 
-            horizonAngle = atan2(thisPoint.x, thisPoint.y) * 180 / M_PI;
+            // horizonAngle = atan2(thisPoint.x, thisPoint.y) * 180 / M_PI;
 
-            columnIdn = -round((horizonAngle-90.0)/ang_res_x) + Horizon_SCAN/2;
+            horizonAngle = atan2(thisPoint.x, thisPoint.y);
+
+            //columnIdn = -round((horizonAngle-90.0)/ang_res_x) + Horizon_SCAN/2;
+              columnIdn = -round((horizonAngle - M_PI_2) / ang_res_x) + Horizon_SCAN * 0.5;
+              
             if (columnIdn >= Horizon_SCAN)
                 columnIdn -= Horizon_SCAN;
 
@@ -412,6 +424,8 @@ public:
                               rangeMat.at<float>(thisIndX, thisIndY));
                 d2 = std::min(rangeMat.at<float>(fromIndX, fromIndY), 
                               rangeMat.at<float>(thisIndX, thisIndY));
+
+                // Segmentation process
 
                 if ((*iter).first == 0)
                     alpha = segmentAlphaX;
